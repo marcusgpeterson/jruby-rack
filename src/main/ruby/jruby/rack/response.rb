@@ -33,6 +33,10 @@ class JRuby::Rack::Response
     (@headers && @headers['Transfer-Encoding'] == "chunked")
   end
 
+  def too_big_for_java_int?(size)
+    size > 2147483647
+  end
+
   def getBody
     b = ""
     @body.each {|part| b << part }
@@ -42,7 +46,9 @@ class JRuby::Rack::Response
   end
 
   def respond(response)
-    unless response.committed?
+    if (fwd = @headers["Forward"]) && fwd.respond_to?(:call)
+      fwd.call(response)
+    else
       write_status(response)
       write_headers(response)
       write_body(response)
@@ -59,7 +65,7 @@ class JRuby::Rack::Response
       when /^Content-Type$/i
         response.setContentType(v.to_s)
       when /^Content-Length$/i
-        response.setContentLength(v.to_i) unless chunked?
+        response.setContentLength(v.to_i) unless chunked? || too_big_for_java_int?(v.to_i)
       else
         if v.respond_to?(:each_line)
           v.each_line {|val| response.addHeader(k.to_s, val.chomp("\n")) }
@@ -138,4 +144,6 @@ class JRuby::Rack::Response
       false
     end
   end
+
+
 end
