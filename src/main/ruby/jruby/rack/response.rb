@@ -9,6 +9,8 @@ class JRuby::Rack::Response
   include Java::org.jruby.rack.RackResponse
   java_import java.nio.channels.Channels
 
+  MAX_JAVA_INT_BYTES = 2147483647
+
   @@object_polluted = begin
                         # Fixnum should not have this method, and it
                         # shouldn't be on Object
@@ -34,7 +36,7 @@ class JRuby::Rack::Response
   end
 
   def too_big_for_java_int?(size)
-    size > 2147483647
+    size > MAX_JAVA_INT_BYTES
   end
 
   def getBody
